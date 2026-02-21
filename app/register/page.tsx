@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { registerUser } from '@/lib/services/auth.service'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -26,9 +27,9 @@ export default function RegisterPage() {
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('token')
-    if (token) {
-      router.push('/dashboard')
+    const user = localStorage.getItem('user')
+    if (user) {
+      router.push('/overview')
     }
   }, [router])
 
@@ -45,7 +46,7 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
 
-    // Validation
+    // Client-side validation
     if (!formData.username || !formData.email || !formData.password) {
       setError('All fields are required')
       setLoading(false)
@@ -65,32 +66,16 @@ export default function RegisterPage() {
     }
 
     try {
-      // Demo registration using localStorage
-      const registeredUsers = localStorage.getItem('registeredUsers')
-      const users = registeredUsers ? JSON.parse(registeredUsers) : []
-
-      // Check if email already exists
-      if (users.some((u: any) => u.email === formData.email)) {
-        setError('Email already registered. Please use a different email or login.')
-        setLoading(false)
-        return
-      }
-
-      // Create new user
-      const newUser = {
-        id: 'user-' + Date.now(),
+      await registerUser({
         username: formData.username,
         email: formData.email,
-        password: formData.password, // In production, this should be hashed
-      }
-
-      users.push(newUser)
-      localStorage.setItem('registeredUsers', JSON.stringify(users))
+        password: formData.password,
+      })
 
       // Registration successful, redirect to login
       router.push('/login?registered=true')
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

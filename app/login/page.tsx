@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { loginUser } from '@/lib/services/auth.service'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
@@ -25,9 +26,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('token')
-    if (token) {
-      router.push('/dashboard')
+    const user = localStorage.getItem('user')
+    if (user) {
+      router.push('/overview')
       return
     }
 
@@ -60,49 +61,15 @@ export default function LoginPage() {
     }
 
     try {
-      // Demo authentication using localStorage
-      // Check for demo user first
-      const demoEmail = 'demo@taskflow.com'
-      const demoPassword = 'demo123'
+      const user = await loginUser({
+        email: formData.email,
+        password: formData.password,
+      })
       
-      if (formData.email === demoEmail && formData.password === demoPassword) {
-        // Demo user login
-        const demoUser = {
-          id: 'demo-user-1',
-          username: 'Demo User',
-          email: demoEmail,
-        }
-        localStorage.setItem('token', 'demo-token-' + Date.now())
-        localStorage.setItem('user', JSON.stringify(demoUser))
-        router.push('/dashboard')
-        return
-      }
-
-      // Check registered users in localStorage
-      const registeredUsers = localStorage.getItem('registeredUsers')
-      if (registeredUsers) {
-        const users = JSON.parse(registeredUsers)
-        const user = users.find(
-          (u: any) => u.email === formData.email && u.password === formData.password
-        )
-
-        if (user) {
-          const userData = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-          }
-          localStorage.setItem('token', 'user-token-' + Date.now())
-          localStorage.setItem('user', JSON.stringify(userData))
-          router.push('/dashboard')
-          return
-        }
-      }
-
-      // If no match found
-      setError('Invalid email or password')
+      // Success - user is already stored in localStorage by the service
+      router.push('/overview')
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -276,5 +243,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

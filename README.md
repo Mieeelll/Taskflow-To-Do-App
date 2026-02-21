@@ -1,94 +1,139 @@
-# TaskFlow - To-do List Web Application
+# TaskFlow - Task Management Application
 
-A modern, full-stack to-do list application built with Next.js and React.
+A modern task management app built with Next.js and FastAPI. Organize tasks, manage categories, keep sticky notes, and schedule events with a clean interface. It uses JWT authentication and MongoDB for secure, persistent storage.
 
 ## Features
 
-- **User Authentication**
-  - User registration with email and password
-  - Secure login functionality
-  - Session management
+### 🔐 User Authentication
 
-- **Task Management**
-  - Create new tasks with title and description
-  - View all personal tasks
-  - Update existing tasks
-  - Delete tasks
-  - Mark tasks as complete/incomplete
+- Login / Register with secure sessions
+- JWT-based authentication
+- Password hashing with bcrypt
+- Protected routes and API authorization
+
+### 📋 Task Management
+
+- Create, edit, and delete tasks
+- Task categories and custom lists
+- Progress tracking and completion toggle
+- Priority levels and due dates
+- Task filtering and sorting
+- Sync with backend (MongoDB)
+
+### 📊 Overview & Insights
+
+- Dashboard with recent tasks and categories
+- Task completion overview
+- Category-wise task counts
+- Quick access to sticky notes and calendar
+
+### 📅 Calendar & Notes
+
+- Calendar view (day / week / month)
+- Add and manage events with time slots
+- Sticky notes wall for quick reminders
+- Drag-and-place sticky notes
+
+### 🎨 User Experience
+
+- Clean, responsive design
+- Loading states and error handling
+- Password visibility toggle
+- Mobile-friendly layout
+- Empty states and clear calls-to-action
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript
-- **Styling**: CSS with modern gradient design
+**Frontend:**
 
-## Getting Started
+- Next.js 14 (App Router)
+- React 18
+- TypeScript
 
-### Prerequisites
+**Backend:**
 
-- Node.js 18+ installed
-- npm or yarn package manager
+- FastAPI
+- MongoDB
+- Motor (async MongoDB driver)
+- Pydantic
 
-### Installation
+**Authentication:**
 
-1. Install dependencies:
+- JWT (HS256)
+- bcrypt
+- Bearer token authorization
+
+**Containerization:**
+
+- Docker
+- Docker Compose
+
+## Local Development
+
+**Frontend:**
+
 ```bash
+cp .env.local.example .env.local
+# Edit .env.local: set NEXT_PUBLIC_API_URL=http://localhost:8000/api
+
 npm install
-```
-
-2. Run the development server:
-```bash
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+Visit: **http://localhost:3000**
+
+**Backend:**
+
+```bash
+cd backend
+python -m venv venv
+# On Windows: venv\Scripts\activate
+# On Unix/MacOS: source venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env: set MONGODB_URL, JWT_SECRET
+
+uvicorn main:app --reload
+```
+
+API available at: **http://localhost:8000**
+
+## API Documentation
+
+- **Swagger UI:** http://localhost:8000/docs
+- **ReDoc:** http://localhost:8000/redoc
 
 ## Project Structure
 
 ```
-├── app/
-│   ├── dashboard/      # Dashboard page with task management
-│   ├── login/          # Login page
-│   ├── register/       # Registration page
-│   ├── layout.tsx      # Root layout
-│   ├── page.tsx        # Home page (redirects to login)
-│   └── globals.css     # Global styles
+Taskflow/
+├── app/                    # Next.js App Router
+│   ├── page.tsx            # Home (redirects)
+│   ├── layout.tsx
+│   ├── login/              # Login page
+│   ├── register/           # Registration page
+│   └── overview/           # Main app (tasks, categories, calendar, sticky notes)
+├── lib/                    # Frontend shared code
+│   ├── hooks/              # useAuth, useTodos
+│   ├── services/           # auth.service, todo.service
+│   ├── types/              # API types
+│   └── utils/              # Error handling, dashboard helpers
+├── public/                 # Static assets
+├── backend/                # FastAPI backend
+│   ├── main.py             # App, CORS, /health
+│   ├── config.py           # Settings from env
+│   ├── database.py         # MongoDB connection
+│   ├── models/             # Pydantic schemas
+│   ├── routers/            # auth, todos
+│   ├── utils/              # auth (JWT, bcrypt), deps
+│   └── requirements.txt
+├── docker/                 # Docker setup
+│   ├── backend/            # Backend Dockerfile, entrypoint
+│   ├── frontend/           # Frontend Dockerfile, entrypoint
+│   └── compose/            # docker-compose (dev, prod, staging)
+├── docker-compose.yml      # Dev stack at project root
 ├── package.json
 ├── next.config.js
 └── tsconfig.json
 ```
-
-## Pages
-
-- **`/register`** - User registration form
-- **`/login`** - User login form
-- **`/dashboard`** - Task management dashboard (protected route)
-
-## API Integration
-
-The application is set up to work with a backend API. You'll need to:
-
-1. Update the API endpoints in:
-   - `app/register/page.tsx` - `/api/auth/register`
-   - `app/login/page.tsx` - `/api/auth/login`
-   - `app/dashboard/page.tsx` - `/api/tasks`
-
-2. The API should handle:
-   - POST `/api/auth/register` - User registration
-   - POST `/api/auth/login` - User authentication (returns token)
-   - GET `/api/tasks` - Fetch user tasks (requires Bearer token)
-   - POST `/api/tasks` - Create new task (requires Bearer token)
-   - PUT `/api/tasks/:id` - Update task (requires Bearer token)
-   - DELETE `/api/tasks/:id` - Delete task (requires Bearer token)
-
-## Development
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-
-## Notes
-
-- Authentication tokens are currently stored in localStorage (for development)
-- The app includes client-side validation and error handling
-- All API calls include proper error handling and loading states

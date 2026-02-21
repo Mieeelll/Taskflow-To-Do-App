@@ -1,0 +1,22 @@
+# Dependencies and build output
+node_modules
+.next
+out
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+*.md
+!README.md
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Misc
+Dockerfile*
+docker-compose*
+*.log
+.DS_Store

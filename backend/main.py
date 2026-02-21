@@ -1,85 +1,81 @@
-"""RESTful API to manage to-do items."""
+"""FastAPI app initialization, CORS, routes."""
 
-from fastapi import FastAPI, HTTPException, Request, status
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from models import TodoCreate, TodoUpdate, TodoResponse
-from store import (
-    create_todo,
-    get_all_todos,
-    get_todo_by_id,
-    update_todo,
-    delete_todo,
-)
+from database import init_indexes
+from routers import auth, todos
+
+# Custom exception handler for consistent { error: string } format
+
+
+def error_response(status_code: int, message: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={"error": message, "status": status_code},
+    )
+
+
+async def http_exception_handler(request: Request, exc) -> JSONResponse:
+    detail = exc.detail
+    if isinstance(detail, list):
+        msg = "; ".join(
+            f"{e.get('loc', [])}: {e.get('msg', str(e))}" for e in detail
+        )
+    else:
+        msg = str(detail)
+    return error_response(exc.status_code, msg)
+
+
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    errors = exc.errors()
+    msg = "; ".join(
+        f"{'.'.join(str(l) for l in e.get('loc', []))}: {e.get('msg', '')}"
+        for e in errors
+    )
+    return error_response(400, msg or "Validation error")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup: create indexes. Shutdown: nothing."""
+    await init_indexes()
+    yield
+
 
 app = FastAPI(
-    title="TaskFlow To-Do API",
-    description="RESTful API for managing to-do items",
+    title="TaskFlow API",
+    description="Task management API",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
+
+@app.get("/health")
+def health():
+    """Health check for Docker and load balancers."""
+    return {"status": "ok"}
+
+
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+# CORS: allow frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Return 400 Bad Request for invalid request bodies."""
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"detail": exc.errors()},
-    )
-
-
-@app.post("/todos", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
-def create_todo_item(payload: TodoCreate):
-    """Create a new to-do item."""
-    return create_todo(payload)
-
-
-@app.get("/todos", response_model=list[TodoResponse])
-def list_todos():
-    """List all to-do items."""
-    return get_all_todos()
-
-
-@app.get("/todos/{todo_id}", response_model=TodoResponse)
-def get_todo(todo_id: str):
-    """Retrieve a single to-do item by id."""
-    todo = get_todo_by_id(todo_id)
-    if todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"To-do item with id '{todo_id}' not found",
-        )
-    return todo
-
-
-@app.put("/todos/{todo_id}", response_model=TodoResponse)
-def update_todo_item(todo_id: str, payload: TodoUpdate):
-    """Update an existing to-do item."""
-    todo = update_todo(todo_id, payload)
-    if todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"To-do item with id '{todo_id}' not found",
-        )
-    return todo
-
-
-@app.delete("/todos/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_todo_item(todo_id: str):
-    """Delete a to-do item."""
-    deleted = delete_todo(todo_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"To-do item with id '{todo_id}' not found",
-        )
+# Include routers with /api prefix
+app.include_router(auth.router, prefix="/api")
+app.include_router(todos.router, prefix="/api")

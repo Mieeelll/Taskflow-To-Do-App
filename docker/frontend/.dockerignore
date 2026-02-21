@@ -1,0 +1,29 @@
+# Dependencies and build
+node_modules
+.next
+out
+.vercel
+
+# Backend (frontend build excludes backend)
+backend
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+*.md
+!README.md
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Docker
+Dockerfile*
+docker-compose*
+docker
+
+# Misc
+*.log
+.DS_Store

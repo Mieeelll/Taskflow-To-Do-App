@@ -2,25 +2,17 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTodos } from '@/lib/hooks/use-todos'
+import { useProtectedRoute } from '@/lib/hooks/use-auth'
+import { logoutUser } from '@/lib/services/auth.service'
+import { todoToTask, taskToTodoUpdate, type Task } from '@/lib/utils/dashboard-utils'
+import type { TodoCreateRequest, TodoUpdateRequest } from '@/lib/types/api'
 
 // =============================================================================
 // TYPE DEFINITIONS & INTERFACES
 // =============================================================================
 
 type TaskStatus = 'pending' | 'in_progress' | 'completed'
-
-interface Task {
-  id: string
-  title: string
-  description: string
-  completed: boolean
-  status?: TaskStatus
-  priority: 'low' | 'medium' | 'high'
-  dueDate: string
-  createdAt: string
-  category: string
-  subtasks?: { id: string; title: string; completed: boolean }[]
-}
 
 interface List {
   id: string
@@ -120,16 +112,7 @@ function TaskItem({ task, lists, onToggleComplete, onEdit, onDelete, showDetails
               onClick={(e) => e.stopPropagation()}
             />
           </div>
-        ) : (
-          <div className="task-complete-checkbox" onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id); }}>
-            <input
-              type="checkbox"
-              checked={isCompleted}
-              onChange={() => onToggleComplete(task.id)}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
+        ) : null}
         <div className="task-content">
           <div className="task-title-row">
             <span className="task-title" style={isCompleted ? { textDecoration: 'line-through', opacity: 0.7 } : undefined}>{task.title}</span>
@@ -160,6 +143,26 @@ function TaskItem({ task, lists, onToggleComplete, onEdit, onDelete, showDetails
               </div>
             )}
           </div>
+          <div className="task-meta-row">
+            {task.priority && (
+              <span className={`priority-badge priority-${task.priority}`}>
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              </span>
+            )}
+            {task.subtasks && task.subtasks.length > 0 && (
+              <div className="task-subtask-count">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                <span>{task.subtasks.length} Subtask{task.subtasks.length !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+          </div>
           {shouldShowDetails && (
             <div className="task-details">
               {task.description && (
@@ -167,15 +170,8 @@ function TaskItem({ task, lists, onToggleComplete, onEdit, onDelete, showDetails
                   {task.description}
                 </div>
               )}
-              <div className="task-details-row">
-                {task.priority && (
-                  <div className="task-detail-item">
-                    <span className={`priority-badge priority-${task.priority}`}>
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </span>
-                  </div>
-                )}
-                {task.dueDate && (
+              {task.dueDate && (
+                <div className="task-details-row">
                   <div className="task-detail-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -185,21 +181,8 @@ function TaskItem({ task, lists, onToggleComplete, onEdit, onDelete, showDetails
                     </svg>
                     <span>{new Date(task.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
                   </div>
-                )}
-                {task.subtasks && task.subtasks.length > 0 && (
-                  <div className="task-detail-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="8" y1="6" x2="21" y2="6" />
-                      <line x1="8" y1="12" x2="21" y2="12" />
-                      <line x1="8" y1="18" x2="21" y2="18" />
-                      <line x1="3" y1="6" x2="3.01" y2="6" />
-                      <line x1="3" y1="12" x2="3.01" y2="12" />
-                      <line x1="3" y1="18" x2="3.01" y2="18" />
-                    </svg>
-                    <span>{task.subtasks.length} Subtask{task.subtasks.length !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -214,16 +197,15 @@ function TaskItem({ task, lists, onToggleComplete, onEdit, onDelete, showDetails
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { isLoading: authLoading, isAuthenticated } = useProtectedRoute()
+  const { todos, loading: todosLoading, error: todosError, addTodo, editTodo, removeTodo, clearError } = useTodos()
+
+  // Convert API todos to tasks for UI
+  const tasks = todos.map(todoToTask)
 
   // --- State: Core Data ---
-  const [tasks, setTasks] = useState<Task[]>([])
   const [lists, setLists] = useState<List[]>([])
-  const [tags, setTags] = useState<Tag[]>([
-    { id: '1', name: 'Tag 1', color: '#22c55e' },
-    { id: '2', name: 'Tag 2', color: '#ef4444' },
-  ])
-  const [loading, setLoading] = useState(true)
-  const [currentView, setCurrentView] = useState<ViewType>('overview')
+  const [tags, setTags] = useState<Tag[]>([])
 
   // --- State: Filters & Search ---
   const [selectedList, setSelectedList] = useState<string | null>(null)
@@ -267,6 +249,9 @@ export default function DashboardPage() {
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 })
   const hasDraggedRef = useRef(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [currentView, setCurrentView] = useState<ViewType>('overview')
+  const [apiError, setApiError] = useState<string | null>(null)
 
   // --- State: Form Data ---
   const [taskFormData, setTaskFormData] = useState({
@@ -298,22 +283,33 @@ export default function DashboardPage() {
   // =============================================================================
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
+    if (!authLoading && !isAuthenticated) {
       router.push('/login')
       return
     }
-    loadTasks()
-    loadLists()
-    loadTags()
-    loadCalendarEvents()
-    loadStickyNotes()
-  }, [router])
+    
+    if (!authLoading && isAuthenticated) {
+      // Load lists, tags, and calendar events from localStorage
+      loadLists()
+      loadTags()
+      loadCalendarEvents()
+      loadStickyNotes()
+      setLoading(false)
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  // Show API errors
+  useEffect(() => {
+    if (todosError) {
+      setApiError(todosError)
+      const timer = setTimeout(() => setApiError(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [todosError])
 
   // Redirect Upcoming view to Overview (Upcoming tab/content removed)
   useEffect(() => {
     if (currentView === 'upcoming') setCurrentView('overview')
-    if (currentView === 'today') setCurrentView('task')
   }, [currentView])
 
   // Close task actions menu when clicking outside
@@ -385,74 +381,58 @@ export default function DashboardPage() {
   // DATA LOADING
   // =============================================================================
 
-  const loadTasks = () => {
-    try {
-      const storedTasks = localStorage.getItem('tasks')
-      if (storedTasks) {
-        const parsed = JSON.parse(storedTasks) as Task[]
-        const migrated = parsed.map((t) => ({
-          ...t,
-          status: t.status ?? (t.completed ? 'completed' : 'pending'),
-        }))
-        setTasks(migrated)
-      }
-    } catch (err) {
-      console.error('Error loading tasks:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // loadTasks is now handled by useTodos hook
+  
   const loadLists = () => {
     try {
-      const storedLists = localStorage.getItem('lists')
-      if (storedLists) {
-        setLists(JSON.parse(storedLists))
-      }
+      const stored = localStorage.getItem('lists')
+      setLists(stored ? JSON.parse(stored) : [])
     } catch (err) {
       console.error('Error loading lists:', err)
+      setLists([])
     }
   }
 
   const loadTags = () => {
     try {
-      const storedTags = localStorage.getItem('tags')
-      if (storedTags) {
-        setTags(JSON.parse(storedTags))
-      }
+      const stored = localStorage.getItem('tags')
+      setTags(stored ? JSON.parse(stored) : [])
     } catch (err) {
       console.error('Error loading tags:', err)
+      setTags([])
     }
   }
 
   const loadCalendarEvents = () => {
     try {
-      const storedEvents = localStorage.getItem('calendarEvents')
-      if (storedEvents) {
-        setCalendarEvents(JSON.parse(storedEvents))
-      }
+      const stored = localStorage.getItem('calendarEvents')
+      setCalendarEvents(stored ? JSON.parse(stored) : [])
     } catch (err) {
       console.error('Error loading calendar events:', err)
+      setCalendarEvents([])
     }
   }
 
   const loadStickyNotes = () => {
     try {
-      const storedNotes = localStorage.getItem('stickyNotes')
-      if (storedNotes) {
-        const notes = JSON.parse(storedNotes)
-        // Reset positions - remove x and y coordinates
-        const resetNotes = notes.map((note: StickyNote) => {
-          const { x, y, ...rest } = note
-          return rest
-        })
-        setStickyNotes(resetNotes)
-        if (resetNotes.length !== notes.length || notes.some((n: StickyNote) => n.x !== undefined || n.y !== undefined)) {
-          saveStickyNotes(resetNotes)
-        }
+      const stored = localStorage.getItem('stickyNotes')
+      if (!stored) {
+        setStickyNotes([])
+        return
+      }
+      const notes = JSON.parse(stored)
+      // Reset positions - remove x and y coordinates
+      const resetNotes = notes.map((note: any) => {
+        const { x, y, ...rest } = note
+        return rest as StickyNote
+      })
+      setStickyNotes(resetNotes)
+      if (resetNotes.length !== notes.length || notes.some((n: any) => n.x !== undefined || n.y !== undefined)) {
+        saveStickyNotes(resetNotes)
       }
     } catch (err) {
       console.error('Error loading sticky notes:', err)
+      setStickyNotes([])
     }
   }
 
@@ -460,11 +440,8 @@ export default function DashboardPage() {
   // DATA SAVING
   // =============================================================================
 
-  const saveTasks = (newTasks: Task[]) => {
-    localStorage.setItem('tasks', JSON.stringify(newTasks))
-    setTasks(newTasks)
-  }
-
+  // Tasks are now saved via the API through useTodos hook
+  
   const saveLists = (newLists: List[]) => {
     localStorage.setItem('lists', JSON.stringify(newLists))
     setLists(newLists)
@@ -490,8 +467,7 @@ export default function DashboardPage() {
   // =============================================================================
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    logoutUser()
     router.push('/login')
   }
 
@@ -565,31 +541,30 @@ export default function DashboardPage() {
     const groupedDescription = selectedTasksList
       .map(t => `- ${t.title}${t.description ? ': ' + t.description : ''}`)
       .join('\n')
-    const groupedSubtasks = selectedTasksList.flatMap(t => 
-      t.subtasks || []
-    )
 
-    // Create new grouped task
-    const groupedTask: Task = {
-      id: Date.now().toString(),
+    // Create grouped task via API
+    const createData: TodoCreateRequest = {
       title: groupedTitle,
       description: groupedDescription,
-      completed: false,
-      status: 'pending',
       priority: selectedTasksList[0]?.priority || 'medium',
-      dueDate: selectedTasksList[0]?.dueDate || '',
+      dueDate: selectedTasksList[0]?.dueDate || undefined,
       category: selectedTasksList[0]?.category || 'Uncategorized',
-      createdAt: new Date().toISOString(),
-      subtasks: groupedSubtasks,
     }
 
-    // Remove selected tasks and add grouped task
-    const updatedTasks = tasks.filter(t => !selectedTasks.has(t.id))
-    saveTasks([groupedTask, ...updatedTasks])
-    
-    setSelectedTasks(new Set())
-    setSelectionMode(false)
-    alert(`Grouped ${selectedCount} tasks into one.`)
+    addTodo(createData).then(() => {
+      // Delete selected tasks
+      selectedTasks.forEach(taskId => {
+        removeTodo(taskId).catch(() => {
+          console.error('Failed to delete task:', taskId)
+        })
+      })
+
+      setSelectedTasks(new Set())
+      setSelectionMode(false)
+      alert(`Grouped ${selectedCount} tasks into one.`)
+    }).catch(() => {
+      setApiError('Failed to group tasks. Please try again.')
+    })
   }
 
   const handleDeleteSelectedTasks = () => {
@@ -599,8 +574,11 @@ export default function DashboardPage() {
     }
 
     if (confirm(`Are you sure you want to delete ${selectedTasks.size} task(s)?`)) {
-      const updatedTasks = tasks.filter(t => !selectedTasks.has(t.id))
-      saveTasks(updatedTasks)
+      selectedTasks.forEach(taskId => {
+        removeTodo(taskId).catch(() => {
+          console.error('Failed to delete task:', taskId)
+        })
+      })
       setSelectedTasks(new Set())
       setSelectionMode(false)
     }
@@ -621,6 +599,7 @@ export default function DashboardPage() {
       priority: 'medium',
       dueDate: dueDate || newTaskDueDate || '',
       category: selectedList || lists[0]?.name || 'Uncategorized',
+      status: 'pending',
       subtasks: [],
       newSubtask: '',
     })
@@ -629,47 +608,44 @@ export default function DashboardPage() {
     setShowTaskModal(true)
   }
 
-  const handleCreateTaskFromModal = (e: React.FormEvent) => {
+  const handleCreateTaskFromModal = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!taskFormData.title.trim()) return
 
-    const taskStatus = taskFormData.status || 'pending'
-    const taskCompleted = taskStatus === 'completed'
+    const taskCompleted = taskFormData.status === 'completed'
 
     if (editingTask) {
-      // Update existing task
-      const updatedTasks = tasks.map((task) =>
-        task.id === editingTask.id
-          ? {
-              ...task,
-              title: taskFormData.title.trim(),
-              description: taskFormData.description.trim(),
-              priority: taskFormData.priority,
-              dueDate: taskFormData.dueDate || '',
-              category: taskFormData.category,
-              status: taskStatus,
-              completed: taskCompleted,
-              subtasks: taskFormData.subtasks,
-            }
-          : task
-      )
-      saveTasks(updatedTasks)
-      setEditingTask(null)
-    } else {
-      // Create new task
-      const newTask: Task = {
-        id: Date.now().toString(),
+      // Update existing task via API
+      const updateData: TodoUpdateRequest = {
         title: taskFormData.title.trim(),
         description: taskFormData.description.trim(),
         completed: taskCompleted,
-        status: taskStatus,
         priority: taskFormData.priority,
-        dueDate: taskFormData.dueDate || '',
+        dueDate: taskFormData.dueDate || undefined,
         category: taskFormData.category,
-        createdAt: new Date().toISOString(),
-        subtasks: taskFormData.subtasks,
       }
-      saveTasks([newTask, ...tasks])
+
+      const result = await editTodo(editingTask.id, updateData)
+      if (result) {
+        setEditingTask(null)
+      } else {
+        setApiError('Failed to update task. Please try again.')
+      }
+    } else {
+      // Create new task via API
+      const createData: TodoCreateRequest = {
+        title: taskFormData.title.trim(),
+        description: taskFormData.description.trim(),
+        completed: taskCompleted,
+        priority: taskFormData.priority,
+        dueDate: taskFormData.dueDate || undefined,
+        category: taskFormData.category,
+      }
+
+      const result = await addTodo(createData)
+      if (!result) {
+        setApiError('Failed to create task. Please try again.')
+      }
     }
 
     // Clear all input fields
@@ -775,72 +751,62 @@ export default function DashboardPage() {
     setShowTaskDetails(task.id)
   }
 
-  const handleUpdateTask = (e: React.FormEvent) => {
+  const handleUpdateTask = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingTask || !newTaskTitle.trim()) return
 
-    const updatedTasks = tasks.map((task) =>
-      task.id === editingTask.id
-        ? { ...task, title: newTaskTitle }
-        : task
-    )
-    saveTasks(updatedTasks)
-    setEditingTask(null)
-    setNewTaskTitle('')
-    setShowTaskDetails(null)
+    const result = await editTodo(editingTask.id, { title: newTaskTitle.trim() })
+    if (result) {
+      setEditingTask(null)
+      setNewTaskTitle('')
+      setShowTaskDetails(null)
+    } else {
+      setApiError('Failed to update task. Please try again.')
+    }
   }
 
   const handleToggleComplete = (taskId: string) => {
-    const updatedTasks = tasks.map((task) => {
-      if (task.id !== taskId) return task
-      const newCompleted = !task.completed
-      return { ...task, completed: newCompleted, status: (newCompleted ? 'completed' : 'pending') as TaskStatus }
+    const task = todos.find(t => t.id === taskId)
+    if (!task) return
+
+    const newCompleted = !task.completed
+    editTodo(taskId, { completed: newCompleted }).catch(() => {
+      setApiError('Failed to update task status. Please try again.')
     })
-    saveTasks(updatedTasks)
   }
 
   const handleUpdateTaskStatus = useCallback((taskId: string, newStatus: TaskStatus) => {
-    setTasks((prevTasks) => {
-      const updatedTasks = prevTasks.map((task) =>
-        task.id === taskId
-          ? { ...task, status: newStatus, completed: newStatus === 'completed' }
-          : task
-      )
-      localStorage.setItem('tasks', JSON.stringify(updatedTasks))
-      return updatedTasks
+    editTodo(taskId, {
+      completed: newStatus === 'completed',
+    }).catch(() => {
+      setApiError('Failed to update task status. Please try again.')
     })
-  }, [])
+  }, [editTodo])
 
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
-    const updatedTasks = tasks.map((task) => {
-      if (task.id !== taskId || !task.subtasks) return task
-      const updatedSubtasks = task.subtasks.map((st) =>
-        st.id === subtaskId ? { ...st, completed: !st.completed } : st
-      )
-      const completedCount = updatedSubtasks.filter((st) => st.completed).length
-      const allSubtasksDone = updatedSubtasks.length > 0 && updatedSubtasks.every((st) => st.completed)
-      let newStatus: TaskStatus = task.status as TaskStatus
-      if (allSubtasksDone) {
-        newStatus = 'completed'
-      } else if (completedCount > 0) {
-        newStatus = 'in_progress'
-      } else {
-        newStatus = 'pending'
-      }
-      return {
-        ...task,
-        subtasks: updatedSubtasks,
-        completed: allSubtasksDone,
-        status: newStatus,
-      }
+    // Subtasks are local state for now
+    const task = tasks.find(t => t.id === taskId)
+    if (!task || !task.subtasks) return
+
+    const updatedSubtasks = task.subtasks.map((st) =>
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    )
+
+    const completedCount = updatedSubtasks.filter((st) => st.completed).length
+    const allSubtasksDone = updatedSubtasks.length > 0 && updatedSubtasks.every((st) => st.completed)
+
+    editTodo(taskId, {
+      completed: allSubtasksDone,
+    }).catch(() => {
+      setApiError('Failed to update subtask. Please try again.')
     })
-    saveTasks(updatedTasks)
   }
 
   const handleDeleteTask = (taskId: string) => {
     if (confirm('Are you sure you want to delete this task?')) {
-      const updatedTasks = tasks.filter((task) => task.id !== taskId)
-      saveTasks(updatedTasks)
+      removeTodo(taskId).catch(() => {
+        setApiError('Failed to delete task. Please try again.')
+      })
     }
   }
 
@@ -865,14 +831,8 @@ export default function DashboardPage() {
       const updatedLists = lists.filter((list) => list.id !== listId)
       saveLists(updatedLists)
 
-      if (listToDelete) {
-        const defaultCategory = updatedLists[0]?.name || 'Uncategorized'
-        const updatedTasks = tasks.map((task) =>
-          task.category === listToDelete.name ? { ...task, category: defaultCategory } : task
-        )
-        saveTasks(updatedTasks)
-      }
-
+      // Note: Task categories cannot be updated via API without full task update
+      // This would need to be handled via individual task updates
       if (selectedList === listToDelete?.name) {
         setSelectedList(null)
       }
@@ -1368,7 +1328,7 @@ export default function DashboardPage() {
           (inProgressTasks.reduce((sum, t) => sum + getTaskCompletionFraction(t), 0) / inProgressCount) * 100
         )
       : null
-  const recentTasks = [...tasks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5)
+  const recentTasks = [...tasks].sort((a, b) => new Date(b.createdAt ?? b.created_at ?? 0).getTime() - new Date(a.createdAt ?? a.created_at ?? 0).getTime()).slice(0, 5)
 
   // Get week dates (Monday to Sunday)
   const getWeekDates = (date: Date) => {
@@ -1434,7 +1394,7 @@ export default function DashboardPage() {
   const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null
   const userData = user ? JSON.parse(user) : null
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="dashboard-loading">
         <div className="loading-spinner"></div>
@@ -1443,12 +1403,44 @@ export default function DashboardPage() {
     )
   }
 
+  if (!isAuthenticated) {
+    return null
+  }
+
   // =============================================================================
   // RENDER
   // =============================================================================
 
   return (
     <div className="dashboard-layout">
+      {/* API Error Banner */}
+      {apiError && (
+        <div className="api-error-banner">
+          <div className="api-error-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{apiError}</span>
+          </div>
+          <button className="api-error-close" onClick={() => setApiError(null)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Todos Loading Indicator */}
+      {todosLoading && (
+        <div className="todos-loading-indicator">
+          <span className="loading-spinner-small"></span>
+          <span>Syncing tasks...</span>
+        </div>
+      )}
+
       {/* Sidebar toggle: always visible at all resolutions - opens sidebar pop-up */}
       <button
         className="mobile-menu-toggle"
@@ -2022,7 +2014,45 @@ export default function DashboardPage() {
         {currentView !== 'categories' && (
         <div className="tasks-container">
           {currentView === 'calendar' ? (
-            calendarView === 'day' ? (
+            calendarEvents.length === 0 ? (
+              <div className="calendar-empty categories-empty">
+                <div className="categories-empty-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+                <p className="categories-empty-title">No Events Yet</p>
+                <p className="categories-empty-subtitle">
+                  Schedule your first event to stay on top of your plans.
+                </p>
+                <button
+                  type="button"
+                  className="categories-create-btn"
+                  onClick={() => {
+                    const today = new Date(currentDate)
+                    setEventFormData({
+                      title: '',
+                      startTime: '09:00',
+                      endTime: '10:00',
+                      date: today.toISOString().split('T')[0],
+                      color: '#2c5282',
+                      description: '',
+                    })
+                    setEditingEvent(null)
+                    setShowEventModal(true)
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Add Your First Event
+                </button>
+              </div>
+            ) : calendarView === 'day' ? (
               <div className="calendar-view">
                 <div className="calendar-day-label">{formatDayName(currentDate)}</div>
                 <div className="calendar-timeline">
@@ -2204,67 +2234,96 @@ export default function DashboardPage() {
             )
           ) : currentView === 'sticky' ? (
             <div className="sticky-wall" onMouseMove={handleStickyMouseMove} onMouseUp={handleStickyMouseUp}>
-              <div className="sticky-grid">
-                {stickyNotes.map((note) => (
-                  <div
-                    key={note.id}
-                    data-note-id={note.id}
-                    className={`sticky-note-card ${draggedSticky === note.id ? 'dragging' : ''}`}
-                    style={{
-                      backgroundColor: note.color,
-                    }}
-                    onMouseDown={(e) => handleStickyMouseDown(e, note.id)}
-                    onClick={(e) => {
-                      // Only open edit if user didn't drag
-                      if (!hasDraggedRef.current) {
-                        handleEditSticky(note)
-                      }
+              {stickyNotes.length === 0 ? (
+                <div className="sticky-wall-empty overview-sticky-empty">
+                  <div className="overview-sticky-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14,2 14,8 20,8" />
+                    </svg>
+                  </div>
+                  <p className="overview-sticky-empty-title">No Sticky Notes Yet</p>
+                  <p className="overview-sticky-empty-subtitle">
+                    Create your first note to get started with quick reminders and ideas.
+                  </p>
+                  <button
+                    type="button"
+                    className="categories-create-btn"
+                    onClick={() => {
+                      setStickyFormData({ title: '', content: '', color: '#fef08a' })
+                      setEditingSticky(null)
+                      setShowStickyModal(true)
                     }}
                   >
-                    <div className="sticky-note-header">
-                      <h3 className="sticky-note-title">{note.title}</h3>
-                      <button
-                        className="sticky-delete-btn"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteSticky(note.id)
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="sticky-note-content">
-                      {note.content ? (
-                        note.content.split('\n').filter(line => line.trim()).map((line, idx) => (
-                          <p key={idx}>• {line.trim()}</p>
-                        ))
-                      ) : (
-                        <p style={{ color: 'rgba(0, 0, 0, 0.4)', fontStyle: 'italic' }}>No content</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <div
-                  className="sticky-note-placeholder"
-                  onClick={() => {
-                    setStickyFormData({
-                      title: '',
-                      content: '',
-                      color: '#fef08a',
-                    })
-                    setEditingSticky(null)
-                    setShowStickyModal(true)
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Create Your First Note
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div className="sticky-grid">
+                  {stickyNotes.map((note) => (
+                    <div
+                      key={note.id}
+                      data-note-id={note.id}
+                      className={`sticky-note-card ${draggedSticky === note.id ? 'dragging' : ''}`}
+                      style={{
+                        backgroundColor: note.color,
+                      }}
+                      onMouseDown={(e) => handleStickyMouseDown(e, note.id)}
+                      onClick={(e) => {
+                        if (!hasDraggedRef.current) {
+                          handleEditSticky(note)
+                        }
+                      }}
+                    >
+                      <div className="sticky-note-header">
+                        <h3 className="sticky-note-title">{note.title}</h3>
+                        <button
+                          className="sticky-delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteSticky(note.id)
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="sticky-note-content">
+                        {note.content ? (
+                          note.content.split('\n').filter(line => line.trim()).map((line, idx) => (
+                            <p key={idx}>• {line.trim()}</p>
+                          ))
+                        ) : (
+                          <p style={{ color: 'rgba(0, 0, 0, 0.4)', fontStyle: 'italic' }}>No content</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div
+                    className="sticky-note-placeholder"
+                    onClick={() => {
+                      setStickyFormData({
+                        title: '',
+                        content: '',
+                        color: '#fef08a',
+                      })
+                      setEditingSticky(null)
+                      setShowStickyModal(true)
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </div>
+                </div>
+              )}
             </div>
           ) : currentView === 'task' ? (
             (() => {
@@ -2736,10 +2795,7 @@ export default function DashboardPage() {
                 setShowTaskDetailModal(false)
                 setTaskDetailModalTask(null)
               }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                Close
               </button>
             </div>
             <div className="modal-form">
