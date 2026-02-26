@@ -12,15 +12,17 @@ export interface Task extends Todo {
 }
 
 /**
- * Convert API Todo to Task with status
+ * Convert API Todo to Task with status and subtasks
  */
 export function todoToTask(todo: Todo): Task {
+  const status =
+    todo.status ?? (todo.completed ? 'completed' : 'pending')
   return {
     ...todo,
-    status: todo.completed ? 'completed' : 'pending',
+    status,
     dueDate: todo.due_date || '',
     createdAt: todo.created_at,
-    subtasks: [],
+    subtasks: todo.subtasks ?? [],
   }
 }
 
@@ -35,6 +37,8 @@ export function taskToTodoUpdate(task: Task) {
     priority: task.priority,
     dueDate: task.due_date || undefined,
     category: task.category,
+    status: task.status,
+    subtasks: task.subtasks,
   }
 }
 

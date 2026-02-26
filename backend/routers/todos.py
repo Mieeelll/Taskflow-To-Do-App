@@ -10,6 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from database import get_database, get_todos_collection
 from models.schemas import (
     DeleteResponse,
+    SubtaskItem,
     TodoCreate,
     TodoListResponse,
     TodoResponse,
@@ -22,11 +23,26 @@ from utils.deps import get_current_user
 router = APIRouter(prefix="/todos", tags=["todos"])
 
 
+def _doc_to_subtasks(doc_list: list | None) -> list[SubtaskItem]:
+    """Convert stored subtasks to list of SubtaskItem for TodoResponse."""
+    if not doc_list:
+        return []
+    return [
+        SubtaskItem(id=str(s.get("id", "")), title=str(s.get("title", "")), completed=bool(s.get("completed", False)))
+        for s in doc_list
+    ]
+
+
 def _to_response(doc: dict) -> TodoResponse:
     """Convert MongoDB document to TodoResponse."""
     created = doc.get("created_at")
     updated = doc.get("updated_at")
     due = doc.get("due_date")
+    status_val = doc.get("status", "pending")
+    if status_val not in ("pending", "in_progress", "completed"):
+        status_val = "completed" if doc.get("completed", False) else "pending"
+    subtasks_raw = doc.get("subtasks") or []
+    subtasks = _doc_to_subtasks(subtasks_raw)
     return TodoResponse(
         id=str(doc["_id"]),
         title=doc["title"],
@@ -37,6 +53,8 @@ def _to_response(doc: dict) -> TodoResponse:
         due_date=due.isoformat() if due else None,
         created_at=created.isoformat() if created else "",
         updated_at=updated.isoformat() if updated else "",
+        status=status_val,
+        subtasks=subtasks,
     )
 
 
@@ -104,14 +122,21 @@ async def create_todo(
                 detail="Invalid due_date format. Use ISO 8601 (e.g., 2024-12-31T23:59:59Z)",
             )
 
+    status_val = getattr(body, "status", "pending") or "pending"
+    completed = (status_val == "completed") or body.completed
+
+    subtasks_stored = [{"id": s.id, "title": s.title, "completed": s.completed} for s in (body.subtasks or [])]
+
     doc = {
         "user_id": ObjectId(user_id),
         "title": body.title.strip(),
         "description": (body.description or "").strip(),
-        "completed": body.completed,
+        "completed": completed,
         "priority": body.priority or "medium",
         "category": body.category or "Uncategorized",
         "due_date": due_date,
+        "status": status_val,
+        "subtasks": subtasks_stored,
         "created_at": now,
         "updated_at": now,
         "deleted_at": None,
@@ -162,6 +187,11 @@ async def update_todo(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid due_date format. Use ISO 8601 (e.g., 2024-12-31T23:59:59Z)",
             )
+    if body.status is not None:
+        update_data["status"] = body.status
+        update_data["completed"] = body.status == "completed"
+    if body.subtasks is not None:
+        update_data["subtasks"] = [{"id": s.id, "title": s.title, "completed": s.completed} for s in body.subtasks]
 
     if not update_data:
         return _to_response(doc)

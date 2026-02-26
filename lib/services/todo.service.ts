@@ -16,6 +16,8 @@ function toBackendCreate(data: TodoCreateRequest): Record<string, unknown> {
     completed: data.completed ?? false,
     priority: data.priority ?? 'medium',
     category: data.category ?? 'Uncategorized',
+    status: data.status ?? 'pending',
+    subtasks: data.subtasks ?? [],
   }
   if (data.dueDate !== undefined && data.dueDate !== null) {
     body.due_date = data.dueDate
@@ -31,6 +33,8 @@ function toBackendUpdate(data: TodoUpdateRequest): Record<string, unknown> {
   if (data.priority !== undefined) body.priority = data.priority
   if (data.category !== undefined) body.category = data.category
   if (data.dueDate !== undefined) body.due_date = data.dueDate
+  if (data.status !== undefined) body.status = data.status
+  if (data.subtasks !== undefined) body.subtasks = data.subtasks
   return body
 }
 

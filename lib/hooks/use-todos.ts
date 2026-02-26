@@ -31,6 +31,11 @@ interface UseTodosActions {
  * Map backend todo to frontend Todo type
  */
 function mapTodo(raw: Record<string, unknown>): Todo {
+  const subtasksRaw = raw.subtasks as Array<{ id: string; title: string; completed: boolean }> | undefined
+  const subtasks = Array.isArray(subtasksRaw)
+    ? subtasksRaw.map((s) => ({ id: String(s?.id ?? ''), title: String(s?.title ?? ''), completed: Boolean(s?.completed) }))
+    : undefined
+  const status = raw.status as Todo['status'] | undefined
   return {
     id: String(raw.id),
     title: String(raw.title),
@@ -41,6 +46,8 @@ function mapTodo(raw: Record<string, unknown>): Todo {
     category: String(raw.category ?? 'Uncategorized'),
     created_at: String(raw.created_at ?? ''),
     updated_at: raw.updated_at ? String(raw.updated_at) : undefined,
+    status: status === 'pending' || status === 'in_progress' || status === 'completed' ? status : undefined,
+    subtasks,
   }
 }
 

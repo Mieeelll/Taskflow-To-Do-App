@@ -1,9 +1,18 @@
 """Pydantic models for request/response."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field
+
+TodoStatus = Literal["pending", "in_progress", "completed"]
+
+
+class SubtaskItem(BaseModel):
+    """Single subtask."""
+    id: str
+    title: str
+    completed: bool = False
 
 
 # ----- Auth -----
@@ -50,6 +59,8 @@ class TodoCreate(BaseModel):
     priority: str = "medium"
     category: str = "Uncategorized"
     due_date: Optional[str] = None
+    status: TodoStatus = "pending"
+    subtasks: list[SubtaskItem] = []
 
 
 class TodoUpdate(BaseModel):
@@ -60,6 +71,8 @@ class TodoUpdate(BaseModel):
     priority: Optional[str] = None
     category: Optional[str] = None
     due_date: Optional[str] = None
+    status: Optional[TodoStatus] = None
+    subtasks: Optional[list[SubtaskItem]] = None
 
 
 class TodoResponse(BaseModel):
@@ -73,6 +86,8 @@ class TodoResponse(BaseModel):
     due_date: str | None
     created_at: str
     updated_at: str
+    status: str = "pending"
+    subtasks: list[SubtaskItem] = []
 
 
 class TodoListResponse(BaseModel):

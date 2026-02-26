@@ -19,6 +19,14 @@ export interface UserLoginRequest {
   password: string
 }
 
+export type TodoStatus = 'pending' | 'in_progress' | 'completed'
+
+export interface SubtaskItem {
+  id: string
+  title: string
+  completed: boolean
+}
+
 export interface Todo {
   id: string
   title: string
@@ -29,6 +37,8 @@ export interface Todo {
   category: string
   created_at: string
   updated_at?: string
+  status?: TodoStatus
+  subtasks?: SubtaskItem[]
 }
 
 export interface TodoCreateRequest {
@@ -38,6 +48,8 @@ export interface TodoCreateRequest {
   priority?: 'low' | 'medium' | 'high'
   dueDate?: string | null
   category?: string
+  status?: TodoStatus
+  subtasks?: SubtaskItem[]
 }
 
 export interface TodoUpdateRequest {
@@ -47,4 +59,6 @@ export interface TodoUpdateRequest {
   priority?: 'low' | 'medium' | 'high'
   dueDate?: string | null
   category?: string
+  status?: TodoStatus
+  subtasks?: SubtaskItem[]
 }

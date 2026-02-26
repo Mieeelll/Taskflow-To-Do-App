@@ -623,6 +623,8 @@ export default function DashboardPage() {
         priority: taskFormData.priority,
         dueDate: taskFormData.dueDate || undefined,
         category: taskFormData.category,
+        status: taskFormData.status,
+        subtasks: taskFormData.subtasks,
       }
 
       const result = await editTodo(editingTask.id, updateData)
@@ -640,6 +642,8 @@ export default function DashboardPage() {
         priority: taskFormData.priority,
         dueDate: taskFormData.dueDate || undefined,
         category: taskFormData.category,
+        status: taskFormData.status,
+        subtasks: taskFormData.subtasks,
       }
 
       const result = await addTodo(createData)
@@ -777,6 +781,7 @@ export default function DashboardPage() {
 
   const handleUpdateTaskStatus = useCallback((taskId: string, newStatus: TaskStatus) => {
     editTodo(taskId, {
+      status: newStatus,
       completed: newStatus === 'completed',
     }).catch(() => {
       setApiError('Failed to update task status. Please try again.')
@@ -784,18 +789,16 @@ export default function DashboardPage() {
   }, [editTodo])
 
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
-    // Subtasks are local state for now
     const task = tasks.find(t => t.id === taskId)
     if (!task || !task.subtasks) return
 
     const updatedSubtasks = task.subtasks.map((st) =>
       st.id === subtaskId ? { ...st, completed: !st.completed } : st
     )
-
-    const completedCount = updatedSubtasks.filter((st) => st.completed).length
     const allSubtasksDone = updatedSubtasks.length > 0 && updatedSubtasks.every((st) => st.completed)
 
     editTodo(taskId, {
+      subtasks: updatedSubtasks,
       completed: allSubtasksDone,
     }).catch(() => {
       setApiError('Failed to update subtask. Please try again.')
