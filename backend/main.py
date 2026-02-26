@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from database import init_indexes
-from routers import auth, todos
+from routers import auth, todos, health
 
 # Custom exception handler for consistent { error: string } format
 
