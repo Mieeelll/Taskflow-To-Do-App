@@ -64,7 +64,10 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 # CORS: allow frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",                              # Local development
+        "https://taskflow-to-do-app-phi.vercel.app",         # Vercel frontend 
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
