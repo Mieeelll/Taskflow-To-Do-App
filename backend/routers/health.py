@@ -1,14 +1,14 @@
 """Health check endpoint."""
-
+   
 from fastapi import APIRouter
-
+   
 router = APIRouter()
-
-
+   
+   
 @router.get("/health")
 async def health_check():
-    """Health check endpoint for Docker and load balancers."""
-    return {
-        "status": "healthy",
-        "service": "taskflow-api"
-    }
+       """Health check endpoint for Docker and load balancers."""
+       return {
+           "status": "healthy",
+           "service": "taskflow-api"
+       }
