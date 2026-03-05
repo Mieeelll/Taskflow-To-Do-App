@@ -2319,14 +2319,31 @@ a {
   font-weight: 400;
   font-family: var(--font-bungee), 'Bungee', sans-serif;
   color: #1f2937;
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.5rem 0;
 }
 
 .overview-sticky-empty-subtitle {
   font-size: 0.9375rem;
   color: #234e76;
-  margin: 0;
+  margin: 0 0 1.5rem 0;
   opacity: 0.9;
+}
+
+/* Fine-tuned spacing for Sticky Wall empty state */
+.sticky-wall-empty {
+  text-align: center;
+}
+
+.sticky-wall-empty .overview-sticky-empty-title {
+  margin-top: 0.75rem;
+}
+
+.sticky-wall-empty .overview-sticky-empty-subtitle {
+  margin-bottom: 1.75rem;
+}
+
+.sticky-wall-empty .categories-create-btn {
+  margin-top: 0;
 }
 
 .overview-sticky-list {
@@ -3234,14 +3251,36 @@ a {
 
 .task-table-column-list {
   flex: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   overflow-y: auto;
+  overflow-x: hidden;
   min-width: 0;
-  align-items: center;
+  padding: 0.75rem 0.5rem 1rem;
+}
+
+/* Subtle scrollbar styling for task columns */
+.task-table-column-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-table-column-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.task-table-column-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.7);
+  border-radius: 999px;
+}
+
+.task-table-column-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.9);
 }
 
 .task-table-column-list .task-item {
   width: 100%;
-  max-width: 420px;
+  max-width: 100%;
   align-self: center;
 }
 
