@@ -3253,11 +3253,11 @@ a {
   flex: 5;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 0;
-  padding: 0.75rem 0.5rem 1rem;
+  padding: 0.75rem 0.75rem 1.25rem;
 }
 
 /* Subtle scrollbar styling for task columns */
@@ -3280,8 +3280,8 @@ a {
 
 .task-table-column-list .task-item {
   width: 100%;
-  max-width: 100%;
-  align-self: stretch;
+  max-width: 90%;
+  align-self: center;
 }
 
 
