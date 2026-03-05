@@ -1702,7 +1702,7 @@ export default function DashboardPage() {
                   }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                  Add note
+                  <span>Add note</span>
                 </button>
               </div>
               {stickyNotes.length === 0 ? (
@@ -1988,28 +1988,30 @@ export default function DashboardPage() {
               )}
             </div>
 {currentView === 'task' && (
+              <div className="tasks-actions-row">
                 <button
-                className="add-task-button"
-                onClick={() => {
-                  setTaskFormData({
-                    title: '',
-                    description: '',
-                    priority: 'medium',
-                    dueDate: '',
-                    category: selectedList || lists[0]?.name || 'Uncategorized',
-                    status: 'pending',
-                    subtasks: [],
-                    newSubtask: '',
-                  })
-                  setShowTaskModal(true)
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                <span>Add New Task</span>
-              </button>
+                  className="add-task-button"
+                  onClick={() => {
+                    setTaskFormData({
+                      title: '',
+                      description: '',
+                      priority: 'medium',
+                      dueDate: '',
+                      category: selectedList || lists[0]?.name || 'Uncategorized',
+                      status: 'pending',
+                      subtasks: [],
+                      newSubtask: '',
+                    })
+                    setShowTaskModal(true)
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span>Add New Task</span>
+                </button>
+              </div>
             )}
           </>
         )}
@@ -2262,7 +2264,7 @@ export default function DashboardPage() {
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
-                    Create Your First Note
+                    <span>Create Your First Note</span>
                   </button>
                 </div>
               ) : (

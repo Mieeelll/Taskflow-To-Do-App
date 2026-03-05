@@ -2512,6 +2512,11 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .content-header-left {
@@ -2955,7 +2960,7 @@ a {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.625rem 1rem;
-  margin: 1rem 2rem;
+  margin: 1rem 0;
   border: 2px solid #234e76;
   border-radius: 8px;
   background: #234e76;
@@ -2967,6 +2972,14 @@ a {
   box-shadow: 0 2px 4px rgba(35, 78, 118, 0.2);
   width: auto;
   max-width: 200px;
+}
+
+.tasks-actions-row {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 2rem;
+  box-sizing: border-box;
 }
 
 .add-task-button:hover {
@@ -3157,6 +3170,10 @@ a {
   gap: 1.5rem;
   padding: 1rem 2rem;
   min-height: 400px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .task-table-column {
@@ -3954,6 +3971,11 @@ a {
   align-items: flex-start;
   padding: 2rem;
   border-bottom: 1px solid #e5e7eb;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .calendar-header-left {
@@ -4072,6 +4094,10 @@ a {
   position: relative;
   overflow-y: auto;
   max-height: calc(100vh - 200px);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .calendar-day-label {
@@ -4147,6 +4173,10 @@ a {
 .calendar-week-view {
   padding: 2rem;
   overflow-x: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .week-header {
@@ -4294,6 +4324,10 @@ a {
 /* Month View */
 .calendar-month-view {
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .month-weekdays {
@@ -4676,7 +4710,7 @@ a {
     width: auto;
     max-width: 280px;
     min-width: 0;
-    margin: 0.75rem 1rem;
+    margin: 0.75rem 0;
     padding: 0.75rem 1.25rem;
     min-height: 44px;
     font-size: 0.9375rem;
@@ -4763,7 +4797,7 @@ a {
     width: auto;
     max-width: 260px;
     min-width: 0;
-    margin: 0.75rem 1rem;
+    margin: 0.75rem 0;
     padding: 0.75rem 1.25rem;
     min-height: 44px;
     font-size: 0.9375rem;
@@ -5120,7 +5154,7 @@ a {
     max-width: 220px;
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
-    margin: 0.75rem 1rem;
+    margin: 0.75rem 0;
   }
 
   .sticky-note-card {
