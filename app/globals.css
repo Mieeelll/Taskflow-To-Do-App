@@ -3281,7 +3281,7 @@ a {
 .task-table-column-list .task-item {
   width: 100%;
   max-width: 100%;
-  align-self: center;
+  align-self: stretch;
 }
 
 
