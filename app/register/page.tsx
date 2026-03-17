@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { registerUser } from '@/lib/services/auth.service'
+import { getErrorMessage } from '@/lib/utils/error-handler'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -29,7 +30,7 @@ export default function RegisterPage() {
     // Check if user is already logged in
     const user = localStorage.getItem('user')
     if (user) {
-      router.push('/overview')
+      router.push('/dashboard')
     }
   }, [router])
 
@@ -66,6 +67,7 @@ export default function RegisterPage() {
     }
 
     try {
+      // Call backend API for registration
       await registerUser({
         username: formData.username,
         email: formData.email,
@@ -74,8 +76,8 @@ export default function RegisterPage() {
 
       // Registration successful, redirect to login
       router.push('/login?registered=true')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

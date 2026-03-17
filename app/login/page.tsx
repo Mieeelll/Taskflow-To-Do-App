@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { loginUser } from '@/lib/services/auth.service'
+import { getErrorMessage } from '@/lib/utils/error-handler'
 
 function LoginForm() {
   const router = useRouter()
@@ -28,7 +29,7 @@ function LoginForm() {
     // Check if user is already logged in
     const user = localStorage.getItem('user')
     if (user) {
-      router.push('/overview')
+      router.push('/dashboard')
       return
     }
 
@@ -61,15 +62,16 @@ function LoginForm() {
     }
 
     try {
+      // Call backend API for authentication
       const user = await loginUser({
         email: formData.email,
         password: formData.password,
       })
       
       // Success - user is already stored in localStorage by the service
-      router.push('/overview')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
+      router.push('/dashboard')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
