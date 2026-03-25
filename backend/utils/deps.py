@@ -2,7 +2,12 @@
 
 from fastapi import Header, HTTPException, status
 
-from utils.auth import verify_token
+try:
+    # Test-friendly imports (when importing `backend.utils.deps`)
+    from backend.utils.auth import verify_token
+except ModuleNotFoundError:
+    # Docker/entrypoint-friendly imports (when running from within `/app`)
+    from utils.auth import verify_token
 
 
 async def get_current_user(authorization: str = Header(...)) -> str:

@@ -24,28 +24,10 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: '#f0f7ff'
-      }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1rem'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #e5e7eb',
-            borderTopColor: '#234e76',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }} />
-          <p style={{ color: '#6b7280' }}>Loading...</p>
+      <div className="home-loading-screen">
+        <div className="home-loading-content">
+          <div className="home-loading-spinner" />
+          <p className="home-loading-text">Loading...</p>
         </div>
       </div>
     )

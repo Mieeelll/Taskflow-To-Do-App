@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Bungee } from 'next/font/google'
 import './globals.css'
+import './styles/components.css'
 
 const inter = Inter({ 
   subsets: ['latin'],

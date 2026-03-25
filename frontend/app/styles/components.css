@@ -1,0 +1,72 @@
+.home-loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f0f7ff;
+}
+
+.home-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.home-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #234e76;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.home-loading-text {
+  color: #6b7280;
+}
+
+.task-main.task-main-clickable {
+  cursor: pointer;
+}
+
+.task-main.task-main-default {
+  cursor: default;
+}
+
+.task-detail-subtask-title-completed {
+  text-decoration: line-through;
+}
+
+.sticky-note-empty-content {
+  color: rgba(0, 0, 0, 0.4);
+  font-style: italic;
+}
+
+.calendar-day-clickable {
+  cursor: pointer;
+}
+
+.color-option-fef08a {
+  background-color: #fef08a;
+}
+
+.color-option-bfdbfe {
+  background-color: #bfdbfe;
+}
+
+.color-option-fbcfe8 {
+  background-color: #fbcfe8;
+}
+
+.color-option-fed7aa {
+  background-color: #fed7aa;
+}
+
+.color-option-d1fae5 {
+  background-color: #d1fae5;
+}
+
+.color-option-e0e7ff {
+  background-color: #e0e7ff;
+}

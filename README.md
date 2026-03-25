@@ -108,18 +108,17 @@ API available at: **http://localhost:8000**
 
 ```
 Taskflow/
-├── app/                    # Next.js App Router
-│   ├── page.tsx            # Home (redirects)
-│   ├── layout.tsx
-│   ├── login/              # Login page
-│   ├── register/           # Registration page
-│   └── overview/           # Main app (tasks, categories, calendar, sticky notes)
-├── lib/                    # Frontend shared code
-│   ├── hooks/              # useAuth, useTodos
-│   ├── services/           # auth.service, todo.service
-│   ├── types/              # API types
-│   └── utils/              # Error handling, dashboard helpers
-├── public/                 # Static assets
+├── frontend/               # Next.js app (workspace package taskflow-frontend)
+│   ├── app/                # App Router
+│   │   ├── page.tsx        # Home (redirects)
+│   │   ├── layout.tsx
+│   │   ├── login/          # Login page
+│   │   ├── register/       # Registration page
+│   │   └── overview/       # Main app (tasks, categories, calendar, sticky notes)
+│   ├── lib/                # Shared code (hooks, services, types, utils)
+│   ├── public/             # Static assets
+│   ├── next.config.js
+│   └── tsconfig.json
 ├── backend/                # FastAPI backend
 │   ├── main.py             # App, CORS, /health
 │   ├── config.py           # Settings from env
@@ -133,7 +132,5 @@ Taskflow/
 │   ├── frontend/           # Frontend Dockerfile, entrypoint
 │   └── compose/            # docker-compose (dev, prod, staging)
 ├── docker-compose.yml      # Dev stack at project root
-├── package.json
-├── next.config.js
-└── tsconfig.json
+└── package.json            # npm workspaces (root scripts delegate to frontend)
 ```

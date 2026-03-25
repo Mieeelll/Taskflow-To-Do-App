@@ -17,6 +17,9 @@ class Settings(BaseSettings):
         env_file=Path(__file__).parent / ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        # `uvicorn`/runtime tooling may set additional env vars (e.g. HOST/PORT/LOG_LEVEL).
+        # We ignore unknown keys so the app can still boot.
+        extra='ignore',
     )
 
 

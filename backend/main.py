@@ -8,8 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from database import init_indexes
-from routers import auth, todos, health
+from pymongo.errors import ServerSelectionTimeoutError
+
+try:
+    # Test-friendly imports (when importing `backend.main` as a module)
+    from backend.database import init_indexes
+    from backend.routers import auth, todos, health
+except ModuleNotFoundError:
+    # Docker/entrypoint-friendly imports (when running from within `/app`)
+    from database import init_indexes
+    from routers import auth, todos, health
 
 # Custom exception handler for consistent { error: string } format
 
@@ -43,6 +51,14 @@ async def validation_exception_handler(
     return error_response(400, msg or "Validation error")
 
 
+async def server_selection_timeout_handler(
+    request: Request, exc: ServerSelectionTimeoutError
+) -> JSONResponse:
+    # When MongoDB is down/unreachable, Motor can take a long time to fail.
+    # We normalize the error so the frontend doesn't just see "Failed to fetch".
+    return error_response(503, "Database connection failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: create indexes. Shutdown: nothing."""
@@ -60,15 +76,15 @@ app = FastAPI(
 
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(ServerSelectionTimeoutError, server_selection_timeout_handler)
 
 # CORS: allow frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",                              # Local development
-        "https://taskflow-to-do-app-phi.vercel.app",         # Vercel frontend 
-    ],
-    allow_credentials=True,
+    # Allow all origins for local development to avoid "Failed to fetch"
+    # caused by origin/port mismatches. The app doesn't rely on cookies.
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )

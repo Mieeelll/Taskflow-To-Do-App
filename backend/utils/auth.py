@@ -6,7 +6,12 @@ from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from config import settings
+try:
+    # Test-friendly imports (when importing `backend.utils.auth`)
+    from backend.config import settings
+except ModuleNotFoundError:
+    # Docker/entrypoint-friendly imports (when running from within `/app`)
+    from config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

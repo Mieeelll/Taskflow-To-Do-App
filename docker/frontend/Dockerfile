@@ -4,7 +4,7 @@
 # Purpose: Production-optimized Next.js frontend (standalone output)
 # Build:   docker build -f docker/frontend/Dockerfile -t taskflow-frontend:latest .
 # Run:     docker run -p 3000:3000 taskflow-frontend:latest
-# Context: Project root
+# Context: Project root (npm workspaces: root package.json + frontend workspace)
 # ============================================================================
 
 # ============================================================================
@@ -18,20 +18,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy package files
 COPY package.json package-lock.json* ./
+COPY frontend ./frontend
 
-RUN npm ci
+RUN NODE_ENV=development npm ci
 
-# Copy source explicitly so app/lib are always included (avoids .dockerignore/context issues)
-COPY app ./app
-COPY lib ./lib
-COPY public ./public
-COPY next.config.js tsconfig.json ./
-COPY next-env.d.ts ./
-COPY . .
+WORKDIR /app/frontend
 
-# Build-time API URL
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
@@ -56,12 +49,10 @@ ENV NODE_ENV=production \
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy standalone output
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/frontend/public ./frontend/public
+COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/static ./frontend/.next/static
 
-# Entrypoint (optional wrapper; can also CMD node server.js directly)
 COPY docker/frontend/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 

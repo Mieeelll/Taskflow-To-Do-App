@@ -1,22 +1,23 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { loginUser } from '@/lib/services/auth.service'
+import { registerUser } from '@/lib/services/auth.service'
 import { getErrorMessage } from '@/lib/utils/error-handler'
 
-function LoginForm() {
+export default function RegisterPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
+    confirmPassword: '',
   })
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     document.body.classList.add('auth-page')
@@ -29,15 +30,9 @@ function LoginForm() {
     // Check if user is already logged in
     const user = localStorage.getItem('user')
     if (user) {
-      router.push('/dashboard')
-      return
+      router.push('/overview')
     }
-
-    // Check if user just registered
-    if (searchParams.get('registered') === 'true') {
-      setSuccess('Registration successful! Please login with your credentials.')
-    }
-  }, [searchParams, router])
+  }, [router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -45,31 +40,42 @@ function LoginForm() {
       [e.target.name]: e.target.value,
     })
     setError('')
-    setSuccess('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setSuccess('')
     setLoading(true)
 
-    // Validation
-    if (!formData.email || !formData.password) {
-      setError('Email and password are required')
+    // Client-side validation
+    if (!formData.username || !formData.email || !formData.password) {
+      setError('All fields are required')
+      setLoading(false)
+      return
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long')
       setLoading(false)
       return
     }
 
     try {
-      // Call backend API for authentication
-      const user = await loginUser({
+      // Call backend API for registration
+      await registerUser({
+        username: formData.username,
         email: formData.email,
         password: formData.password,
       })
-      
-      // Success - user is already stored in localStorage by the service
-      router.push('/dashboard')
+
+      // Registration successful, redirect to login
+      router.push('/login?registered=true')
     } catch (err: unknown) {
       setError(getErrorMessage(err) || 'An error occurred. Please try again.')
     } finally {
@@ -178,18 +184,29 @@ function LoginForm() {
           <h1>TaskFlow</h1>
           <p className="tagline">Your Personal Task Manager</p>
           <p className="description">
-            Organize your life, one task at a time. Stay productive and achieve your goals with TaskFlow.
+            Join thousands of users who are staying organized and productive. Start managing your tasks today.
           </p>
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
+      {/* Right Side - Register Form */}
       <div className="form-section">
         <div className="card">
-          <h1>Welcome Back</h1>
+          <h1>Create Account</h1>
           {error && <div className="error-message">{error}</div>}
-          {success && <div className="success-message">{success}</div>}
           <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Enter your username"
+                required
+              />
+            </div>
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
@@ -212,7 +229,7 @@ function LoginForm() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  autoComplete="off"
+                  autoComplete="new-password"
                   required
                 />
                 <button
@@ -235,23 +252,48 @@ function LoginForm() {
                 </button>
               </div>
             </div>
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <div className="password-input-wrapper">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your password"
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
             <button type="submit" className="btn" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? 'Signing Up...' : 'Sign Up'}
             </button>
           </form>
           <div className="link-text">
-            Don't have an account? <Link href="/register">Sign up here</Link>
+            Already have an account? <Link href="/login">Login here</Link>
           </div>
         </div>
       </div>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LoginForm />
-    </Suspense>
   )
 }

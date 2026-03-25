@@ -7,18 +7,38 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from database import get_database, get_todos_collection
-from models.schemas import (
-    DeleteResponse,
-    SubtaskItem,
-    TodoCreate,
-    TodoListResponse,
-    TodoResponse,
-    TodoUpdate,
-    ToggleCompleteBody,
-    ToggleCompleteResponse,
-)
-from utils.deps import get_current_user
+try:
+    # Test-friendly imports (when importing `backend.routers.todos`)
+    from backend.database import get_database, get_todos_collection
+except ModuleNotFoundError:
+    # Docker/entrypoint-friendly imports (when running from within `/app`)
+    from database import get_database, get_todos_collection
+try:
+    # Test-friendly imports (when importing `backend.routers.todos`)
+    from backend.models.schemas import (
+        DeleteResponse,
+        SubtaskItem,
+        TodoCreate,
+        TodoListResponse,
+        TodoResponse,
+        TodoUpdate,
+        ToggleCompleteBody,
+        ToggleCompleteResponse,
+    )
+    from backend.utils.deps import get_current_user
+except ModuleNotFoundError:
+    # Docker/entrypoint-friendly imports (when running from within `/app`)
+    from models.schemas import (
+        DeleteResponse,
+        SubtaskItem,
+        TodoCreate,
+        TodoListResponse,
+        TodoResponse,
+        TodoUpdate,
+        ToggleCompleteBody,
+        ToggleCompleteResponse,
+    )
+    from utils.deps import get_current_user
 
 router = APIRouter(prefix="/todos", tags=["todos"])
 
